@@ -1,0 +1,6 @@
+alembic 
+alembic revision --autogenerate -m "AUTO generate migration"
+alembic upgrade head 
+
+alembic downgrade "파일이름"
+alembic downgrade -1

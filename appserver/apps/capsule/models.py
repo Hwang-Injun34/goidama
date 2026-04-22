@@ -1,5 +1,5 @@
 import uuid 
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from enum import Enum 
 from decimal import Decimal
 from datetime import datetime 
@@ -7,8 +7,10 @@ from datetime import datetime
 from sqlalchemy import UniqueConstraint, CheckConstraint, Column, DateTime, Index, Numeric
 from sqlmodel import SQLModel, Field, func, Relationship
 
-from apps.account.models import User
-from apps.capsule.models import Capsule
+if TYPE_CHECKING: 
+    from appserver.apps.account.models import User
+
+
 
 class CapsuleStatus(str, Enum):
     LOCKED = "locked"
@@ -45,7 +47,6 @@ class Capsule(SQLModel, table=True):
         CheckConstraint("current_edit_count <= max_edit_count", name="check_edit_count_limit"),
 
         Index("ix_capsule_owner_timeline", "owner_id", "is_deleted"),
-        Index("ix_capsule_open_trigger", "open_at", "status")
     )
 
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -68,14 +69,12 @@ class Capsule(SQLModel, table=True):
         description="캡슐 내용(최대 100자)"
     )
 
-    open_at: datetime = Field(nullable=False, description="개봉 예정 시간")
     status: CapsuleStatus = Field(
         default=CapsuleStatus.LOCKED,
         nullable=False
     )
 
     is_group: bool = Field(default=False, nullable=False)
-    open_type: CapsuleOpenType = Field(nullable=False)
 
     max_edit_count: int = Field(default= 3, nullable=False, description="최대 수정 횟수")
     current_edit_count: int = Field(default = 0, nullable=False, description="현재 수정 횟수")
@@ -98,11 +97,11 @@ class Capsule(SQLModel, table=True):
     # 만든 사람(N:1)
     owner: "User" = Relationship(back_populates="capsules")
 
-    # 참여자 목록(1:N)
-    contents: List["CapsuleContent"] = Relationship(back_populates="capsule")
-
     # 캡슐 안의 컨텐츠들(사진, 노래 등)(1:N)
     contents: List["CapsuleContent"] = Relationship(back_populates="capsule")
+
+    # 참여자
+    participants: List["CapsuleParticipant"] = Relationship(back_populates="capsule")
 
     # 위치 정보(1:1)
     location: Optional["CapsuleLocation"] = Relationship(back_populates="capsule")
@@ -162,9 +161,9 @@ class CapsuleContent(SQLModel, table=True):
 # ============================================================
 class CapsuleParticipant(SQLModel, table=True):
     __tablename__ = "capsule_participants"
-    __table_args__ = {
+    __table_args__ = (
         UniqueConstraint("capsule_id", "user_id", name="uq_capsule_user_participation"),
-    }
+    )
 
     id: Optional[int] = Field(default=None, primary_key=True)
 
@@ -182,7 +181,7 @@ class CapsuleParticipant(SQLModel, table=True):
         description="사용자 ID"
     )
 
-    role: ParticipantRole = Field(nullable=False, description="역할(방장/멤버")
+    role: ParticipantRole = Field(nullable=False, description="역할(방장/멤버)")
 
     status: ParticipantStatus = Field(
         default=ParticipantStatus.INVITED,
@@ -193,10 +192,11 @@ class CapsuleParticipant(SQLModel, table=True):
     created_at: datetime = Field(
         sa_column_kwargs={"server_default": func.now()},
         nullable=False,
-        description="참여일(초대일"
+        description="참여일(초대일)"
     )
 
     user: "User" = Relationship(back_populates="participating_capsules")
+    
     capsule: "Capsule" = Relationship(back_populates="participants")
 
 

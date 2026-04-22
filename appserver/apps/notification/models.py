@@ -2,12 +2,14 @@ from enum import Enum
 from datetime import datetime 
 from typing import Optional 
 import uuid 
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Index 
 from sqlmodel import SQLModel, Field, func, Relationship 
 
-from apps.account.models import User
- 
+if TYPE_CHECKING:
+    from appserver.apps.account.models import User
+
 class NotificationType(str, Enum):
     CAPSULE_OPEN = "capsule_open"
     INVITE = "invite"

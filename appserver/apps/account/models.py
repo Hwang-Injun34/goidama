@@ -1,15 +1,17 @@
 import uuid 
 from datetime import datetime
-from typing import Optional, List 
 from enum import Enum
+from typing import TYPE_CHECKING, List, Optional
 
 from pydantic import EmailStr 
 from sqlalchemy import UniqueConstraint, text
 from sqlmodel import SQLModel, Field, func, Relationship, Column 
 
-from apps.capsule.models import Capsule, CapsuleParticipant
-from apps.friend.models import FriendRequest
-from apps.notification.models import Notification
+if TYPE_CHECKING: 
+    from appserver.apps.capsule.models import Capsule, CapsuleParticipant
+    from appserver.apps.friend.models import FriendRequest
+    from appserver.apps.notification.models import Notification
+
 
 class UserRole(str, Enum):
     USER = "user"

@@ -2,11 +2,14 @@ import uuid
 from typing import Optional
 from enum import Enum 
 from datetime import datetime 
+from typing import TYPE_CHECKING 
 
 from sqlalchemy import UniqueConstraint, CheckConstraint
 from sqlmodel import SQLModel, Field, func, Relationship
 
-from apps.account.models import User
+if TYPE_CHECKING: 
+    from appserver.apps.account.models import User
+
 
 class FriendRequestStatus(str, Enum):
     PENDING = "pending"
@@ -20,13 +23,13 @@ class FriendRequestStatus(str, Enum):
 class FriendRequest(SQLModel, table=True):
     __tablename__="friend_requests"
     __table_args__ = (
-        UniqueConstraint("request_id", "receiver_id", name="uq_friend_request_pair"),
+        UniqueConstraint("requester_id", "receiver_id", name="uq_friend_request_pair"),
         CheckConstraint("requester_id <> receiver_id", name="check_not_self_request"),
     )
     
     id: Optional[int] = Field(default=None, primary_key=True)
 
-    request_id: uuid.UUID = Field(
+    requester_id: uuid.UUID = Field(
         foreign_key="users.id", 
         index=True,
         nullable=False, 
