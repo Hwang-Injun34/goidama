@@ -2,9 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
 from sqlmodel import SQLModel
-
 from appserver.database.db import create_engine, create_session_factory
-
 from appserver.apps.account.endpoints import router as account_router
 # from appserver.apps.friend.endpoints import router as friend_router
 # from appserver.apps.capsule.endpoints import router as capsule_router

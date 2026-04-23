@@ -1,11 +1,13 @@
+from http import server
 import uuid 
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, List, Optional
 
+from click import Option
 from pydantic import EmailStr 
-from sqlalchemy import UniqueConstraint, text
-from sqlmodel import SQLModel, Field, func, Relationship, Column 
+from sqlalchemy import func, Column, DateTime
+from sqlmodel import SQLModel, Field, Relationship
 
 if TYPE_CHECKING: 
     from appserver.apps.capsule.models import Capsule, CapsuleParticipant
@@ -20,97 +22,80 @@ class UserRole(str, Enum):
 
 class Provider(str, Enum):
     KAKAO = "kakao"
-    GOOGLE = "google"
+
 
 # ============================================================
 # User Model
 # ============================================================
 class User(SQLModel, table = True):
     __tablename__ = "users"
-    __table_args__ = (
-        UniqueConstraint("email", name="uq_user_email"),
-        UniqueConstraint("nickname", name="uq_user_nickname"),
-    )
-    
+
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     
-    email: Optional[EmailStr] = Field(
-        default=None,
-        nullable=True,
-        index=True,
-        max_length=128, 
-        description="사용자 이메일"
-        )
+    oauth_id: str = Field(index=True, unique=True)
+    provider: Provider = Field(default=Provider.KAKAO)
     
-    nickname: str = Field(
-        nullable=False, 
-        index=True,
-        max_length=40,
-        description="사용자 별명"
-        )
-    
-    name: Optional[str] = Field(
-        default=None,
-        max_length=40, 
-        description="사용자 이름"
-    )
-
+    nickname: str = Field(index=True, max_length=40)
     role: UserRole = Field(default=UserRole.USER)
 
     created_at: datetime = Field(
-        nullable=False, 
-        sa_column_kwargs={
-            "server_default": func.now()
-        }
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     )
+    
     updated_at: datetime = Field(
-        nullable=False,
-        sa_column_kwargs={
-            "server_default": func.now(),
-            "onupdate":func.now(),
-        },
+        sa_column=Column(
+            DateTime(timezone=True), 
+            server_default=func.now(), 
+            onupdate=func.now(), 
+            nullable=False
+        )
     )
 
-    deleted_at: Optional[datetime] = Field(default=None, index=True)
+    deleted_at: Optional[datetime] = Field(
+        default=None, 
+        sa_column=Column(DateTime(timezone=True), index=True)
+    )
+
+    #------------------------------------
+    #   Relationship 설정
+    #------------------------------------
     
-    # 소셜 계정 정보(1:N)
-    auth_providers: List["AuthProvider"] = Relationship(back_populates="user")
-    
+    # JWT - refresh token
+    refresh_tokens: List["RefreshToken"] = Relationship(back_populates="user")
+
     # 내가 만든 캡슐(1:N)
     capsules: List["Capsule"] = Relationship(back_populates="owner")
     
     # 내가 참여 중인 캡슐들(N:M 연결 테이블을 통해)
     participating_capsules: List["CapsuleParticipant"] = Relationship(back_populates="user")
     
-    # 친구 요청(보낸 것 / 받은 것)
-    sent_requests: List["FriendRequest"] = Relationship(
-        sa_relationship_kwargs={"primaryjoin": "User.id==FriendRequest.requester_id"},
-        back_populates="requester"
-    )
-    received_requests: List["FriendRequest"] = Relationship(
-        sa_relationship_kwargs={"primaryjoin": "User.id==FriendRequest.receiver_id"},
-        back_populates="receiver"
-    )
-
     # 알림
     notifications: List["Notification"] = Relationship(back_populates="user")
 
-
-
 # ============================================================
-# AuthProvider Model
+# RefreshToken
 # ============================================================
-class AuthProvider(SQLModel, table = True):
-    __tablename__ = "auth_providers"
-    __table_args__ = (
-        UniqueConstraint("provider", "provider_id", name="uq_provider_pid"),
-    )
+class RefreshToken(SQLModel, table=True):
+    __tablename__="refresh_tokens"
 
-    id: Optional[int] = Field(default=None, primary_key=True) 
-    
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+
     user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
 
-    provider: Provider
-    provider_id: str  
+    token: str = Field(index=True, unique=True)
+
+    device_id: uuid.UUID = Field(index=True) 
     
-    user: Optional["User"] = Relationship(back_populates="auth_providers")
+    expires_at: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    created_at: datetime = Field( 
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    )
+    
+    revoked: bool = Field(default=False)
+
+    #------------------------------------
+    #   Relationship 설정
+    #------------------------------------
+    user: Optional["User"] = Relationship(back_populates="refresh_tokens")

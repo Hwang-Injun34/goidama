@@ -1,10 +1,11 @@
-from pytest import Session
+from fastapi import Request
 
-from appserver.database.db import create_session_factory
-
-async def get_session():
-    if create_session_factory is None: 
+async def get_session(request: Request):
+    # lifespan에서 저장한 session_factory를 가져오기
+    session_factory = request.app.state.session_factory
+    
+    if session_factory is None: 
         raise RuntimeError("DB not initialized")
     
-    async with create_session_factory() as session: 
+    async with session_factory() as session: 
         yield session
