@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import Response, HTTPException
 
 
-from apps.friend.service import establish_friendship_by_invite
+from appserver.apps.friend.services.friend_invite_service import establish_friendship_by_invite
 from appserver.apps.account.schemas.auth import LoginResponse
 from appserver.apps.account.models import RefreshToken, User, Provider
 from appserver.apps.account.auth.kakao.client import (
@@ -48,25 +48,39 @@ async def kakao_login(code: str, session, response: Response, invite_code: Optio
     # 4. 없으면 생성
     #---------------
     if not user:
+        while True:
+            new_code = User.generate_friend_code()
+            code_check = await session.execute(
+                select(User).where(User.friend_code==new_code)
+            )
+
+            if not code_check.scalar_one_or_none():
+                break 
+
         profile = user_info.get("kakao_account", {}).get("profile", {})
         nickname = profile.get("nickname") or f"kakao_{kakao_id[:6]}"
 
         user = User(
             oauth_id=kakao_id,
             provider=Provider.KAKAO,
-            nickname=nickname
+            nickname=nickname,
+            friend_code=new_code
         )
         session.add(user)
         await session.commit()
         await session.refresh(user)
 
     #---------------
-    # 5. 초대 코드가 있다면 친구 맺기
+    # 5. 초대 코드가 있다면 즉시 친구 맺기
     #---------------
-
+    if invite_code:
+        try:
+            await establish_friendship_by_invite(user.id, invite_code, session)
+        except Exception as e:
+            print(f"Invite Friendship Error: {e}")
 
     #---------------
-    # 5. JWT
+    # 6. JWT
     #---------------
     device_id = uuid.uuid4()
 
@@ -80,7 +94,7 @@ async def kakao_login(code: str, session, response: Response, invite_code: Optio
     )
 
     #---------------
-    # 6. DB 저장
+    # 7. DB 저장
     #---------------
     refresh_token_obj = RefreshToken(
         user_id = user.id,
@@ -114,6 +128,7 @@ async def kakao_login(code: str, session, response: Response, invite_code: Optio
         max_age=max_age_7d,
     )
 
+    print(f"[access_token]: {access_token}\n")
     return LoginResponse(
         access_token=access_token,
         user_id=str(user.id)

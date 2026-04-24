@@ -1,5 +1,7 @@
 import uuid 
 from fastapi import Depends, HTTPException, Request, status
+from fastapi import security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlmodel import select 
 from sqlalchemy.ext.asyncio import AsyncSession 
 
@@ -7,32 +9,20 @@ from appserver.database.session import get_session
 from appserver.apps.account.models import User
 from appserver.apps.account.auth.jwt.service import verify_token 
 
+reusable_oauth2 = HTTPBearer()
+
 async def get_current_user(
-        request:Request, 
+        auth: HTTPAuthorizationCredentials = Depends(reusable_oauth2),
         session: AsyncSession=Depends(get_session)
     ) ->User:
-    #---------------
-    # 1. Access Token 추출
-    #---------------
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(401, "Authorization 헤더 없음")
-    
-    #---------------
-    # 2. Bearer 토큰 파싱
-    #---------------
-    try:
-        scheme, token = auth_header.split()
-        if scheme.lower() != "bearer":
-            raise ValueError()
-    except ValueError:
-        raise HTTPException(401, "Authorization 형식 오류")
+
+    token= auth.credentials
 
     #---------------
-    # 3. jwt 검증
+    # 1. jwt 검증
     #---------------
     payload = verify_token(token)
-
+    
     if payload.get("type") != "access":
         raise HTTPException(401, "잘못된 토큰 타입")
     
@@ -48,7 +38,7 @@ async def get_current_user(
         raise HTTPException(401, "잘못된 user_id 형식")
     
     #---------------
-    # 4. DB 조회
+    # 2. DB 조회
     #---------------
     result = await session.execute(
         select(User).where(
@@ -59,13 +49,13 @@ async def get_current_user(
     user = result.scalar_one_or_none()
 
     #---------------
-    # 5. 사용자 존재 체크
+    # 3. 사용자 존재 체크
     #---------------
     if not user:
         raise HTTPException(401, "존재하지 않는 유저")
 
 
     #---------------
-    # 6. 최종 변환
+    # 4. 최종 변환
     #---------------
     return user

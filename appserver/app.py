@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from sqlmodel import SQLModel
 from appserver.database.db import create_engine, create_session_factory
 from appserver.apps.account.endpoints import router as account_router
-# from appserver.apps.friend.endpoints import router as friend_router
+from appserver.apps.friend.endpoints import router as friend_router
 # from appserver.apps.capsule.endpoints import router as capsule_router
 # from appserver.apps.notification.endpoints import router as notification_router
 
@@ -31,6 +31,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(account_router, prefix="/account")
-# app.include_router(friend_router, prefix="/friend")
+app.include_router(friend_router, prefix="/friend")
 # app.include_router(capsule_router, prefix="/capsule")
 # app.include_router(notification_router, prefix="/notification")

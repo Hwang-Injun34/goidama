@@ -1,5 +1,8 @@
-from http import server
+from gzip import READ
+import secrets
+import string
 import uuid 
+from http import server
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, List, Optional
@@ -11,7 +14,7 @@ from sqlmodel import SQLModel, Field, Relationship
 
 if TYPE_CHECKING: 
     from appserver.apps.capsule.models import Capsule, CapsuleParticipant
-    from appserver.apps.friend.models import FriendRequest
+    from appserver.apps.friend.models import Friendship
     from appserver.apps.notification.models import Notification
 
 
@@ -31,17 +34,15 @@ class User(SQLModel, table = True):
     __tablename__ = "users"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    
     oauth_id: str = Field(index=True, unique=True)
     provider: Provider = Field(default=Provider.KAKAO)
-    
     nickname: str = Field(index=True, max_length=40)
     role: UserRole = Field(default=UserRole.USER)
+    friend_code: str = Field(index=True, unique=True, max_length=15)
 
     created_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     )
-    
     updated_at: datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), 
@@ -50,7 +51,6 @@ class User(SQLModel, table = True):
             nullable=False
         )
     )
-
     deleted_at: Optional[datetime] = Field(
         default=None, 
         sa_column=Column(DateTime(timezone=True), index=True)
@@ -68,9 +68,21 @@ class User(SQLModel, table = True):
     
     # 내가 참여 중인 캡슐들(N:M 연결 테이블을 통해)
     participating_capsules: List["CapsuleParticipant"] = Relationship(back_populates="user")
-    
+
+    # 내가 맺은 친구 관계들(1:N)
+    friendships: List["Friendship"] = Relationship(
+        sa_relationship_kwargs={
+            "primaryjoin": "User.id==Friendship.user_id",
+            "lazy": "selectin" # 비동기 환경에서 친구 목록을 안전하게 미리 가져옴
+        }
+    )
     # 알림
     notifications: List["Notification"] = Relationship(back_populates="user")
+    
+    @staticmethod 
+    def generate_friend_code():
+        chars = string.ascii_uppercase + string.digits 
+        return f"GD-{''.join(secrets.choice(chars) for _ in range(4))}-{''.join(secrets.choice(chars) for _ in range(4))}"
 
 # ============================================================
 # RefreshToken
