@@ -69,3 +69,20 @@ class FriendRequest(SQLModel, table=True):
             "lazy": "selectin"
         }
     )
+
+# ============================================================
+# BlockList Model
+# ============================================================
+class BlockList(SQLModel, table=True):
+    __tablename__="block_list" 
+    __table_args__ = (
+        UniqueConstraint("blocker_id", "blocked_id", name="unique_block"),
+    )
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    blocker_id: uuid.UUID = Field(foreign_key="users.id", index=True)
+    blocked_id: uuid.UUID = Field(foreign_key="users.id", index=True) 
+
+    created_at: datetime = Field( 
+        sa_column=Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    )

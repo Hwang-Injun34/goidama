@@ -1,6 +1,10 @@
+import uuid 
 from fastapi import APIRouter, Depends, Request
-from typing import List 
+from typing import List
 
+from fastapi.types import DependencyCacheKey 
+
+from appserver.apps.friend.services.block_service import block_user_service, remove_friendship, unblock_user_service
 from appserver.database.session import get_session 
 from appserver.apps.account.models import User 
 from appserver.apps.account.auth.jwt.dependencies import get_current_user 
@@ -95,3 +99,31 @@ const shareToKakao = () => {
 };
 
 """
+
+
+# 친구 삭제
+@router.delete("/delete/{friend_id}")
+async def delete_friend( 
+    friend_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    session = Depends(get_session)
+):
+    return await remove_friendship(current_user.id, friend_id, session)
+
+# 사용자 차단 
+@router.post("/block/{target_id}")
+async def block_user(
+    target_id: uuid.UUID, 
+    current_user: User = Depends(get_current_user),
+    session = Depends(get_session)
+):
+    return await block_user_service(current_user.id, target_id, session)
+
+# 차단 해제
+@router.delete("/unblock/{target_id}")
+async def unblock_user(
+    target_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    session = Depends(get_session)
+):
+    return await unblock_user_service(current_user.id, target_id, session)
