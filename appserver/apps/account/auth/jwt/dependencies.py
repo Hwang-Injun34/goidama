@@ -1,13 +1,15 @@
 import uuid 
-from fastapi import Depends, HTTPException, Request, status
-from fastapi import security
+from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
 from sqlmodel import select 
 from sqlalchemy.ext.asyncio import AsyncSession 
 
 from appserver.database.session import get_session
-from appserver.apps.account.models import User
+
 from appserver.apps.account.auth.jwt.service import verify_token 
+
+from appserver.apps.account.models import User
 
 reusable_oauth2 = HTTPBearer()
 
