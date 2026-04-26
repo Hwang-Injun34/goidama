@@ -59,8 +59,6 @@ from appserver.apps.capsule.schemas import (
     InvitationResponse,
 )
 
-
-
 from appserver.apps.capsule.services.list_service import get_my_capsules_map_service, get_my_timeline_service
 from appserver.apps.capsule.services.create_service import create_capsule_service
 from appserver.apps.capsule.services.add_content_service import add_capsule_content_service

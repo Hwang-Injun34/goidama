@@ -14,7 +14,7 @@ async def create_notification(
         user_id=user_id,
         type=n_type,
         title=title,
-        message=message,
+        content=message,
         related_data=related_data
     )
     session.add(new_notif)

@@ -1,5 +1,6 @@
 import uuid 
 from sqlmodel import select
+from fastapi import HTTPException
 
 from appserver.apps.account.models import User, UserRole 
 from appserver.apps.friend.models import Friendship 
@@ -15,11 +16,11 @@ from appserver.apps.capsule.models import (
 from appserver.apps.friend.models import Friendship
 
 async def create_capsule_service(user_id: uuid.UUID, data, session):
-    owner_result = await session.execute(
-        select(User)
-    )
-    owner = owner_result.scalar_one()
-
+    owner = await session.get(User, user_id)
+    
+    if not owner:
+        raise HTTPException(404, "사용자를 찾을 수 없습니다.")
+    
     #===================
     # 1. 캡슐 기본 정보 생성
     #===================
@@ -77,7 +78,7 @@ async def create_capsule_service(user_id: uuid.UUID, data, session):
             # B. 알림 생성
             await create_notification(
                 user_id=f_id, # 알림 받을 친구 ID
-                n_type=NotificationType.CAPSULE_INVITATION,
+                n_type=NotificationType.CAPSULE_INVITE,
                 title="[새로운 초대장]",
                 message=f"{owner.nickname}님이 '{data.title}' 캡슐에 초대했습니다!",
                 related_data={"capsule_id": str(new_capsule.id)},

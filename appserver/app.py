@@ -10,7 +10,7 @@ from appserver.apps.account.endpoints import router as account_router
 from appserver.apps.friend.endpoints import router as friend_router
 from appserver.apps.capsule.endpoints import router as capsule_router
 from appserver.core.scheduler import update_available_capsules_daily, scheduler
-# from appserver.apps.notification.endpoints import router as notification_router
+from appserver.apps.notification.endpoints import router as notification_router
 
 
 DATABASE_URL = "sqlite+aiosqlite:///./goidama.db"
@@ -54,4 +54,4 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 app.include_router(account_router, prefix="/account")
 app.include_router(friend_router, prefix="/friend")
 app.include_router(capsule_router, prefix="/capsule")
-# app.include_router(notification_router, prefix="/notification")
+app.include_router(notification_router, prefix="/notification")
