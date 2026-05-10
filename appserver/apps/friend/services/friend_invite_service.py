@@ -2,7 +2,7 @@ import uuid
 from sqlmodel import select 
 
 from appserver.apps.account.models import User 
-from appserver.apps.friend.models import Friendship, FriendRequest, RequestStatus
+from appserver.apps.friend.models import Friendship, RequestStatus
 
 # 가입 시 친구 코드 입력
 async def establish_friendship_by_invite(invited_user_id: uuid.UUID, friend_code: str, session):

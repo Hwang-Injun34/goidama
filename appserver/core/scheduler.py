@@ -40,7 +40,7 @@ async def update_available_capsules_daily(session_factory):
                     n_type=NotificationType.CAPSULE_AVAILABLE,
                     title="시간이 됐어요!",
                     message=f"'{capsule.title}' 캡슐을 열 시간이 됐습니다. 장소로 이동해 캡슐을 깨워주세요!",
-                    related_data={"capsule_id": str(capsule.id)},
+                    related_id=str(capsule.id),
                     session=session
                 )
 
@@ -67,7 +67,7 @@ async def update_available_capsules_daily(session_factory):
                     n_type=NotificationType.CAPSULE_OPENED,
                     title="기억이 돌아왔어요.",
                     message=f"약속 장소에는 못 갔지만, 1년이 지나 '{capsule.title}' 캡슐이 자동으로 열렸습니다.",
-                    related_data={"capsule_id": str(capsule.id)},
+                    related_id=str(capsule.id),
                     session=session
                 )
 

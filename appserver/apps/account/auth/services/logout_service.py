@@ -1,9 +1,11 @@
 from alembic.command import revision
 from sqlmodel import select, update
 from fastapi import Request, Response
-from appserver.apps.account.models import RefreshToken, User
 
-async def logout_service(request:Request, response:Response, user: User, session):
+from appserver.apps.account.models import RefreshToken, User
+from appserver.apps.account.schemas import MessageResponse
+
+async def logout_service(request:Request, response:Response, user: User, session) -> MessageResponse:
     #---------------
     # 1. 쿠키에서 사용 중인 리프레시 토큰 가져오기
     #---------------
@@ -31,14 +33,14 @@ async def logout_service(request:Request, response:Response, user: User, session
     response.delete_cookie(key="refresh_token")
     response.delete_cookie(key="device_id")
 
-    return {"detail":"로그아웃 성공"}
+    return MessageResponse(message="로그아웃 되었습니다.")
 
 
 async def logout_all_service(
     response: Response,
     user: User, 
     session
-): 
+) -> MessageResponse: 
     #---------------
     # 1. 해당 유저의 모든 리프레시 토큰을 한 번에 무효화
     #---------------
@@ -55,4 +57,4 @@ async def logout_all_service(
     response.delete_cookie(key="refresh_token")
     response.delete_cookie(key="device_id")
 
-    return {"detail": "모든 기기에서 로그아웃 성공"}
+    return MessageResponse(message="모든 기기에서 로그아웃되었습니다.")

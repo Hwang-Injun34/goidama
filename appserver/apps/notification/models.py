@@ -14,6 +14,7 @@ class NotificationType(str, Enum):
     CAPSULE_AVAILABLE = "capsule_available" # 개봉일 도달 (알이 흔들림)
     MEMBER_CHECKIN = "member_checkin"     # 멤버 체크인 현황 (X/N명 완료)
     CAPSULE_OPENED = "capsule_opened"     # 캡슐 최종 개봉 (꽃이 핌)
+    MEMBER_JOINED = "member_joined"
 
 class Notification(SQLModel, table=True):
     __tablename__ = "notifications"

@@ -13,11 +13,11 @@ from sqlalchemy import func, Column, DateTime
 from sqlmodel import SQLModel, Field, Relationship
 
 if TYPE_CHECKING: 
+    from appserver.apps.friend.models import Friendship, FriendGroup, FriendGroupMember
     from appserver.apps.capsule.models import Capsule, CapsuleParticipant
-    from appserver.apps.friend.models import Friendship
     from appserver.apps.notification.models import Notification
 
-
+# --- Enum 정의 ---
 class UserRole(str, Enum):
     USER = "user"
     HOST = "host"
@@ -26,6 +26,10 @@ class UserRole(str, Enum):
 class Provider(str, Enum):
     KAKAO = "kakao"
 
+class ThemeType(str, Enum):
+    LIGHT = "light"
+    DARK = "dark"
+    SYSTEM = "system"
 
 # ============================================================
 # User Model
@@ -36,13 +40,17 @@ class User(SQLModel, table = True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     oauth_id: str = Field(index=True, unique=True)
     provider: Provider = Field(default=Provider.KAKAO)
+    
     nickname: str = Field(index=True, max_length=40)
+    profile_image_url: Optional[str] = Field(default=None) 
+
     role: UserRole = Field(default=UserRole.USER)
     friend_code: str = Field(index=True, unique=True, max_length=15)
 
     created_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     )
+
     updated_at: datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), 
@@ -51,6 +59,7 @@ class User(SQLModel, table = True):
             nullable=False
         )
     )
+    
     deleted_at: Optional[datetime] = Field(
         default=None, 
         sa_column=Column(DateTime(timezone=True), index=True)
@@ -59,6 +68,12 @@ class User(SQLModel, table = True):
     #------------------------------------
     #   Relationship 설정
     #------------------------------------
+
+    # 내가 만든 그룹
+    owned_groups: List["FriendGroup"] = Relationship(back_populates="owner")
+
+    if TYPE_CHECKING:
+        from appserver.apps.friend.models import FriendGroup
     
     # JWT - refresh token
     refresh_tokens: List["RefreshToken"] = Relationship(back_populates="user")

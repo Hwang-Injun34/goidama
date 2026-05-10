@@ -1,7 +1,10 @@
 import uuid 
-from sqlmodel import select
-from fastapi import HTTPException
+from datetime import datetime, date, timezone 
+from sqlmodel import select, func 
+from sqlalchemy.orm import selectinload
+from fastapi import HTTPException, status
 
+from appserver.core.reverse_geocode import reverse_geocode
 from appserver.apps.account.models import User, UserRole 
 from appserver.apps.friend.models import Friendship 
 from appserver.apps.notification.models import NotificationType 
@@ -14,15 +17,36 @@ from appserver.apps.capsule.models import (
     ParticipantStatus,
 )
 from appserver.apps.friend.models import Friendship
+from appserver.apps.capsule.schemas import CapsuleBaseResponse
 
-async def create_capsule_service(user_id: uuid.UUID, data, session):
-    owner = await session.get(User, user_id)
+async def create_capsule_service(user_id: uuid.UUID, data, session) -> CapsuleBaseResponse:
     
+    owner = await session.get(User, user_id)
     if not owner:
         raise HTTPException(404, "사용자를 찾을 수 없습니다.")
     
     #===================
-    # 1. 캡슐 기본 정보 생성
+    # 1. 하루 생성 제한 체크(최대 3개)
+    #===================
+    today_start = datetime.combine(date.today(), datetime.min.time(), tzinfo=timezone.utc)
+    count_stmt = (
+        select(func.count(Capsule.id))
+        .where(Capsule.owner_id == user_id, Capsule.created_at >= today_start)
+    )
+    current_count = (await session.execute(count_stmt)).scalar()
+    if current_count >= 3:
+        raise HTTPException(429, "캡슐은 하루에 3개까지만 생성할 수 있습니다.")
+    
+    
+    #===================
+    # 2. 역지오코딩(좌표 -> 주소 변환)
+    #===================
+    # 나중에 자세히 만들기
+    detected_address = "위치 정보 기반 주소 추출 중..." 
+
+
+    #===================
+    # 3. 캡슐 기본 정보 생성
     #===================
     new_capsule = Capsule(
         owner_id=user_id,
@@ -30,8 +54,10 @@ async def create_capsule_service(user_id: uuid.UUID, data, session):
         open_at=data.open_at, 
         latitude=data.latitude, 
         longitude=data.longitude,
+        address=detected_address,
         is_group=data.is_group,
-        # 처음 생성 시에는 내용을 채우고 초대를 수락받아야 하므로 PENDING
+        skin_id=data.skin_id,
+        visibility=data.visibility,
         status=CapsuleStatus.PENDING 
     )
     session.add(new_capsule)
@@ -39,7 +65,7 @@ async def create_capsule_service(user_id: uuid.UUID, data, session):
     await session.flush()
 
     #===================
-    # 2. 생성자(Owner)를 참여자로 등록
+    # 4. 생성자(Owner)를 참여자로 등록
     #===================
     owner_participant = CapsuleParticipant(
         capsule_id=new_capsule.id,
@@ -50,7 +76,7 @@ async def create_capsule_service(user_id: uuid.UUID, data, session):
     session.add(owner_participant)
     
     #===================
-    # 3. 공동 캡슐일 경우 친구 초대 처리
+    # 5. 공동 캡슐일 경우 친구 초대 처리
     #===================
     # data.friend_ids가 None일 경우를 대비해 (data.friend_ids or []) 처리
     if data.is_group and data.friend_ids:
@@ -81,7 +107,7 @@ async def create_capsule_service(user_id: uuid.UUID, data, session):
                 n_type=NotificationType.CAPSULE_INVITE,
                 title="[새로운 초대장]",
                 message=f"{owner.nickname}님이 '{data.title}' 캡슐에 초대했습니다!",
-                related_data={"capsule_id": str(new_capsule.id)},
+                related_id=str(new_capsule.id),
                 session=session
             )
 
@@ -90,4 +116,13 @@ async def create_capsule_service(user_id: uuid.UUID, data, session):
     # 갱신된 데이터를 다시 불러옴 (ID, created_at 등)
     await session.refresh(new_capsule)
     
-    return new_capsule
+    return CapsuleBaseResponse(
+        id=new_capsule.id,
+        title=new_capsule.title,
+        status=new_capsule.status.value,  # enum → string
+        open_at=new_capsule.open_at,
+        is_group=new_capsule.is_group,
+        address=new_capsule.address,
+        thumbnail_url=None,  # 아직 썸네일 로직 없으니까 일단 None
+        skin_id=new_capsule.skin_id,
+    )

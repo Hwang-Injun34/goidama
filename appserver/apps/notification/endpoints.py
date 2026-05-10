@@ -1,16 +1,19 @@
+import uuid 
 from fastapi import APIRouter, Depends
 from sqlmodel import select
+from typing import List 
 
 from appserver.database.session import get_session 
 from appserver.apps.account.models import User 
 from appserver.apps.account.auth.jwt.dependencies import get_current_user 
 from appserver.apps.notification.models import Notification 
+from appserver.apps.notification.schemas import NotificationReadResponse, NotificationResponse
 
 router = APIRouter()
 
-@router.get("/list")
+@router.get("/list", response_model=List[NotificationResponse])
 async def get_notifications(
-    current_user = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     session = Depends(get_session)
 ):
     # 최신순 50개만 조회
@@ -24,10 +27,10 @@ async def get_notifications(
     return result.scalars().all()
 
 
-@router.post("/{id}/read")
+@router.post("/{id}/read", response_model=NotificationReadResponse)
 async def mark_as_read(
-    id: int,
-    current_user = Depends(get_current_user),
+    id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
     session = Depends(get_session)
 ):
     result = await session.execute(
@@ -37,4 +40,4 @@ async def mark_as_read(
     if notif:
         notif.is_read = True
         await session.commit()
-    return {"status": "success"}
+    return NotificationReadResponse()

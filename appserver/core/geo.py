@@ -2,8 +2,13 @@
 geopy: 지도/위치 계산 라이브러리
 geodesic: 지구 곡률을 고려한 실제 거리 계산
 """
-from geopy.distance import geodesic
+import math
 
 def get_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    #두 좌표 사이의 거리를 미터(m) 단위로 반환
-    return geodesic((lat1, lon1), (lat2, lon2)).meters
+    R = 6371000  # 지구 반지름 (m)
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c

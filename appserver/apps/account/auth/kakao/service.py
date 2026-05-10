@@ -5,8 +5,8 @@ from fastapi import Response, HTTPException
 
 
 from appserver.apps.friend.services.friend_invite_service import establish_friendship_by_invite
-from appserver.apps.account.schemas.auth import LoginResponse
-from appserver.apps.account.models import RefreshToken, User, Provider
+from appserver.apps.account.schemas import LoginResponse
+from appserver.apps.account.models import RefreshToken, User, Provider, ThemeType
 
 from appserver.apps.account.auth.kakao.client import (
     get_kakao_token,
@@ -59,18 +59,31 @@ async def kakao_login(code: str, session, response: Response, invite_code: Optio
             if not code_check.scalar_one_or_none():
                 break 
 
-        profile = user_info.get("kakao_account", {}).get("profile", {})
+        kakao_account = user_info.get("kakao_account", {})
+        profile = kakao_account.get("profile", {})
+        
         nickname = profile.get("nickname") or f"kakao_{kakao_id[:6]}"
+        profile_image = profile.get("profile_image_url") 
 
         user = User(
             oauth_id=kakao_id,
             provider=Provider.KAKAO,
             nickname=nickname,
-            friend_code=new_code
+            friend_code=new_code,
+            profile_image_url=profile_image,
         )
+
         session.add(user)
         await session.commit()
         await session.refresh(user)
+    else:
+        profile = user_info.get("kakao_account", {}).get("profile", {})
+        new_profile_image = profile.get("profile_image_url")
+
+        if user.profile_image_url != new_profile_image:
+            user.profile_image_url = new_profile_image 
+            session.add(user)
+            await session.commit()
 
     #---------------
     # 5. 초대 코드가 있다면 즉시 친구 맺기
@@ -133,5 +146,6 @@ async def kakao_login(code: str, session, response: Response, invite_code: Optio
     print(f"[access_token]: {access_token}\n")
     return LoginResponse(
         access_token=access_token,
-        user_id=str(user.id)
+        user_id=str(user.id),
+        token_type="Bearer"
     )

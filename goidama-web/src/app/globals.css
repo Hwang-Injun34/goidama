@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+/* =========================
+   Theme (Tailwind v4 방식)
+========================= */
+@theme {
+  /* Palette - 인스타 감성의 세련된 라벤더 팔레트 */
+  --color-brand-white: #FFFFFF;
+  --color-brand-surface: #FAFAFA;
+  
+  --color-brand-lavender-50: #F3EFFC;   /* 아주 연한 배경 (슬라이드 등) */
+  --color-brand-lavender-100: #EDE8F5;  /* 테두리, 구분선 */
+  --color-brand-lavender-400: #C4B5FD;  /* 중간 포인트, 아이콘 */
+  --color-brand-lavender-600: #8B7FD4;  /* 핵심 브랜드 컬러 (메인 텍스트, 버튼) */
+  --color-brand-lavender-800: #4A3F8A;  /* 깊은 강조색 */
+
+  /* Neutral Text - 느끼하지 않은 무채색 */
+  --color-brand-text: #1A1A1A;          /* 주요 제목 (검정 대신 진한 회색) */
+  --color-brand-subtext: #8E8E93;       /* 부가 설명, 날짜 */
+  --color-brand-light: #DBDBDB;         /* 비활성 요소 */
+
+  /* Typography */
+  --font-pretendard: 'Pretendard', -apple-system, sans-serif;
+
+  /* Shadow - 보라색 기운이 아주 미세하게 섞인 투명한 그림자 */
+  --shadow-soft: 0 4px 20px rgba(139, 127, 212, 0.05);
+  --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.03);
+
+  /* Radius */
+  --radius-xl: 18px;   /* 카드용 */
+  --radius-2xl: 24px;  /* 히어로 섹션용 */
+
+  /* Animation - 타임캡슐의 신비로움을 더해주는 부드러운 움직임 */
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  --animate-float: float 5s ease-in-out infinite;
+  --animate-slide-up: slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* =========================
+   Base
+========================= */
+@layer base {
+  :root {
+    --safe-area-inset-top: env(safe-area-inset-top);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-brand-white);
+    color: var(--color-brand-text);
+    font-family: var(--font-pretendard);
+    min-height: 100dvh;
+    overflow-x: hidden;
+    /* 모바일 앱 느낌을 위한 탭 하이라이트 제거 및 오버스크롤 방지 */
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* =========================
+   Utilities
+========================= */
+@layer utilities {
+
+  /* ===== Card 스타일: 하얀 배경 위에서 깨끗하게 보임 ===== */
+  .capsule-card {
+    background-color: var(--color-brand-white);
+    border: 1px solid var(--color-brand-lavender-100);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-card);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .capsule-card:active {
+    transform: scale(0.98);
+  }
+
+  /* ===== Button 스타일: 브랜드 컬러 적용 ===== */
+  .btn-primary {
+    background-color: var(--color-brand-lavender-600);
+    color: white;
+    font-weight: 700;
+    border-radius: 16px;
+    padding: 0.875rem 1.5rem;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-primary:active {
+    background-color: var(--color-brand-lavender-800);
+    transform: scale(0.97);
+  }
+
+  /* ===== Badge 스타일: 깔끔하고 가벼운 느낌 ===== */
+  .badge-lavender {
+    background-color: var(--color-brand-lavender-50);
+    color: var(--color-brand-lavender-600);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  /* ===== Scrollbar 숨기기 ===== */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* ===== Safe Area 보정 ===== */
+  .pt-safe { padding-top: var(--safe-area-inset-top); }
+  .pb-safe { padding-bottom: var(--safe-area-inset-bottom); }
+
+  /* ===== 라벤더 그라데이션 (아바타 링 등에 사용) ===== */
+  .bg-lavender-grad {
+    background: linear-gradient(135deg, var(--color-brand-lavender-400), var(--color-brand-lavender-600));
+  }
+}

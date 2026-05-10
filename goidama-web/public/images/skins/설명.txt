@@ -1,0 +1,16 @@
+잠긴 상태 (Locked / Available / Pending)
+    파일명: skin-{id}-locked.png
+    예시: skin-1-locked.png, skin-2-locked.png
+
+열린 상태 (Opened)
+    파일명: skin-{id}-opened.png
+    예시: skin-1-opened.png, skin-2-opened.png
+
+skin-1-locked.png 
+skin-1-opened.png 
+
+skin-2-locked.png
+skin-2-opened.png 
+
+skin-1030-locked.png 
+skin-1030-opened.png

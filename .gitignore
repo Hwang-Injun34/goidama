@@ -1,15 +1,40 @@
-__pycache__/  
-*.pyc
-*.pyo
-
-# DB files
-*.db
-
-# env
+# --- Python (Backend) ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
 .env
-
-# mac
-.DS_Store
-
-# logs
+.env.*
 *.log
+
+# --- Database ---
+*.db
+*.sqlite3
+uploads/
+
+# --- Node.js (Frontend) ---
+node_modules/
+.next/
+out/
+build/
+.vercel
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# --- IDE & OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+command.txt
+info.txt
+
+# --- Project Specific ---
+command.txt
+info.txt
+*.tmp

@@ -9,6 +9,11 @@ from sqlmodel import SQLModel, Field, Relationship
 if TYPE_CHECKING: 
     from appserver.apps.account.models import User
 
+# --- Enum 정의 ---
+class VisibilityType(str, Enum):
+    PRIVATE = "private"  # 나만 보기
+    FRIENDS = "friends"  # 친구에게 공개
+
 class CapsuleStatus(str, Enum):
     PENDING = "pending" # 초대 수락 대기(공동 캡슐)
     LOCKED = "locked"   # 잠김(시간 대기 중)
@@ -32,21 +37,22 @@ class Capsule(SQLModel, table=True):
     __tablename__ = "capsules"
 
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    
     owner_id: uuid.UUID = Field(foreign_key="users.id", index=True)
-    
     title: str = Field(min_length =1, max_length=30)
 
     open_at: datetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
     
-    # 위도
-    latitude: float = Field(sa_column=Column(Float, nullable=False))
-    # 경도
-    longitude: float = Field(sa_column=Column(Float, nullable=False))
+    # 위치 정보 및 주소 정보
+    latitude: Optional[float] = Field(default=None, sa_column=Column(Float, nullable=True))
+    longitude: Optional[float] = Field(default=None, sa_column=Column(Float, nullable=True))
+    address: Optional[str] = Field(default=None)
     
     status: CapsuleStatus = Field(default=CapsuleStatus.PENDING)
-    
     is_group: bool = Field(default=False) # 개인/공동 구분
+
+    visibility: VisibilityType = Field(default=VisibilityType.FRIENDS)
+    skin_id: int = Field(default=1) # 캡슐 모양 번호
+    thumbnail_url: Optional[str] = Field(default=None) # 대표 사진 URL
 
     created_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), server_default=func.now())
@@ -59,10 +65,16 @@ class Capsule(SQLModel, table=True):
     owner: Optional["User"] = Relationship(back_populates="capsules")
 
     # 캡슐 안의 컨텐츠들(1:N)
-    contents: List["CapsuleContent"] = Relationship(back_populates="capsule")
+    contents: List["CapsuleContent"] = Relationship(
+        back_populates="capsule", 
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+    )
 
     # 참여자
-    participants: List["CapsuleParticipant"] = Relationship(back_populates="capsule")
+    participants: List["CapsuleParticipant"] = Relationship(
+        back_populates="capsule", 
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+    )
 
 # ============================================================
 # CapsuleContent Model
@@ -76,13 +88,19 @@ class CapsuleContent(SQLModel, table=True):
     
     user_id: uuid.UUID = Field(foreign_key="users.id") # 작성자
 
-    text: str = Field(min_length=1, max_length=100)
+    text: str = Field(min_length=1, max_length=300)
+
+
+    created_at: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), server_default=func.now())
+    )
     
     #-----------------------------------
     # 관계 설정
     #-----------------------------------
     capsule: Optional[Capsule] = Relationship(back_populates="contents")
     images: List["CapsuleImage"] = Relationship(back_populates="content")
+    user: Optional["User"] = Relationship() 
 
 # ============================================================
 # CapsuleParticipant Model

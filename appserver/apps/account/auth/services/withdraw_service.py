@@ -3,7 +3,9 @@ from datetime import datetime, timedelta, timezone
 from alembic.command import revision
 from sqlmodel import select, update
 from fastapi import Request, Response
+
 from appserver.apps.account.models import RefreshToken, User
+from appserver.apps.account.schemas import MessageResponse
 
 async def withdraw_service(
     response: Response,
@@ -35,7 +37,7 @@ async def withdraw_service(
     # 4. commit
     #---------------
     await session.commit()
-    return {"detail":"회원 탈퇴가 완료되었습니다."}
+    return MessageResponse(message="회원 탈퇴가 완료되었습니다.")
 
     
     

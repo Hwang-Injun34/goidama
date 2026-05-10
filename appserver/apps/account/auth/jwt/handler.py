@@ -4,13 +4,14 @@ from fastapi import Request, Response, HTTPException
 from datetime import datetime, timezone
 
 from appserver.apps.account.models import RefreshToken 
+from appserver.apps.account.schemas import LoginResponse
 from appserver.apps.account.auth.jwt.service import (
     create_access_token,
     create_refresh_token,
     verify_token,
 )
 
-async def handle_refresh(request: Request, response: Response, session):
+async def handle_refresh(request: Request, response: Response, session) -> LoginResponse:
     
     #---------------
     # 1. 쿠키
@@ -121,4 +122,8 @@ async def handle_refresh(request: Request, response: Response, session):
         max_age=max_age,
     )
 
-    return {"access_token":new_access}
+    return LoginResponse(
+        access_token=new_access,
+        user_id=user_id,
+        token_type="Bearer"
+    )
